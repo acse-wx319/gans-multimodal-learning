@@ -19,6 +19,11 @@ Pandas 1.0.5
 Matplotlib 3.2.2      
 
 ## Usage
+### Synthetic Data
+Specify the required parameters as described below. Input data will be automatically generated. 
+Parameters:
+
+### Time-series Data
 
 ## License
 Distributed under the MIT License. See LICENSE for more information.
