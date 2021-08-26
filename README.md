@@ -20,8 +20,26 @@ Matplotlib 3.2.2
 
 ## Usage
 ### Synthetic Data
-Specify the required parameters as described below. Input data will be automatically generated. 
+Specify the required parameters as described below. Input data will be automatically generated.     
+
 Parameters:
+  - gp, sn: Whether to apply gradient penalty and/or spectral normalization.
+  - train: Whether to train a GAN or load a pre-trained one.
+  - fixed_input: Whether to produce fixed-input predictions.
+  - eph: If not training, specify the epoch of model to load.
+  - DATASET: Which synthetic data to use (sine, moon, 2spirals, circle, helix).
+  - suffix: Output version.
+  - LATENT_DIM: Input latent space dimension for generator.
+  - DIM: Hidden layer dimension for generator and discriminator.
+  - LAMBDA: Penalty factor for gradient penalty method.
+  - DROPOUT_RATE: Dropout rate for generator.
+  - lr: Learning rate for GAN.
+  - CRITIC_ITERS: How many critic iterations per generator iteration
+  - BATCH_SIZE: Size of mini batch.
+  - ITERS: Total number of epochs.
+  - log_interval: How frequent to write to log and save models 
+  - use_cuda: Whether to turn on use_cuda
+
 
 ### Time-series Data
 
