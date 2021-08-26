@@ -40,7 +40,7 @@ def plot_time_data(fake_data, out_name, out_path, scaler):
     # transform the scaled data back to real scale 
     # true_data = scaler.inverse_transform(true_data)
 
-        # noise = torch.randn(150, LATENT_DIM)
+        # noise = torch.randn(150, latent_dim)
         # fake_data = netG(noise).detach().numpy().reshape(150, ntimes, nvars)
         # fake_data = scaler.inverse_transform(fake_data.reshape(150*ntimes, nvars))
     
@@ -123,42 +123,42 @@ def plot_time_predictions(true_data, fake_data, out_name, out_path, scaler):
     plt.scatter(true_data[:, 0], true_data[:, 1], c='orange', label='Real data')
     plt.title('PM10')
     ax.legend()
-    plt.savefig(out_path + 'pm10' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'pm10' + out_name + '_pred.jpg')
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     plt.scatter(true_data[:, 0], fake_data[:, 2], c='blue', label='WGAN')
     plt.scatter(true_data[:, 0], true_data[:, 2], c='orange', label='Real data')
     plt.title('PM2.5')
     ax.legend()
-    plt.savefig(out_path + 'pm25' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'pm25' + out_name + '_pred.jpg')
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     plt.scatter(true_data[:, 0], fake_data[:, 3], c='blue', label='WGAN')
     plt.scatter(true_data[:, 0], true_data[:, 3], c='orange', label='Real data')
     plt.title('PM1')
     ax.legend()
-    plt.savefig(out_path + 'pm1' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'pm1' + out_name + '_pred.jpg')
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     plt.scatter(true_data[:, 0], fake_data[:, 4], c='blue', label='WGAN')
     plt.scatter(true_data[:, 0], true_data[:, 4], c='orange', label='Real data')
     plt.title('CO2')
     ax.legend()
-    plt.savefig(out_path + 'co2' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'co2' + out_name + '_pred.jpg')
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     plt.scatter(true_data[:, 0], fake_data[:, 5], c='blue', label='WGAN')
     plt.scatter(true_data[:, 0], true_data[:, 5], c='orange', label='Real data')
     plt.title('T')
     ax.legend()
-    plt.savefig(out_path + 'temp' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'temp' + out_name + '_pred.jpg')
     
     fig, ax = plt.subplots(1, 1, figsize=(6, 4))
     plt.scatter(true_data[:, 0], fake_data[:, 6], c='blue', label='WGAN')
     plt.scatter(true_data[:, 0], true_data[:, 6], c='orange', label='Real data')
     plt.title('RH')
     ax.legend()
-    plt.savefig(out_path + 'rh' + out_name + '_pred' + str(end_index) + '.jpg')
+    plt.savefig(out_path + 'rh' + out_name + '_pred.jpg')
 
 
 def read_data(data_path):
@@ -219,7 +219,7 @@ def concat_timesteps(X_time, ntimes, step, times):
     return np.array(X_time_concat)
 
 
-def predict_fixed(netG, true_dist, input_size, output_size):
+def predict_fixed(netG, true_dist, input_size, output_size, input_dim, latent_dim, nvars, ntimes, use_cuda = False):
     """
     For some given x coordinates and a pre-trained generator, 
     run an optimization algorithm to find latent vectors that 
@@ -252,7 +252,7 @@ def predict_fixed(netG, true_dist, input_size, output_size):
     
     # mse loss
     mse = nn.MSELoss()
-    noise = torch.randn(input_size, LATENT_DIM)
+    noise = torch.randn(input_size, latent_dim)
     noise.requires_grad = True
     
     if use_cuda:
@@ -268,7 +268,7 @@ def predict_fixed(netG, true_dist, input_size, output_size):
     # run optimizer
     for epoch in range(10000):
         samples = netG(noise)
-        loss = mse(samples[:, :(INPUT_DIM-nvars+2)], true_dist[:, :(INPUT_DIM-nvars+2)])
+        loss = mse(samples[:, :(input_dim-nvars+2)], true_dist[:, :(input_dim-nvars+2)])
         if not min_loss or loss.item() < min_loss:
             min_loss = loss.item() 
             min_latent = noise.detach()
@@ -280,18 +280,18 @@ def predict_fixed(netG, true_dist, input_size, output_size):
     samples = netG(min_latent).detach()
     # # use true time values
     samples[:, time_index] = true_dist[:, time_index]
-    xs = samples[:, :(INPUT_DIM-nvars)]
-    x = true_dist[:, :(INPUT_DIM-nvars)]
+    xs = samples[:, :(input_dim-nvars)]
+    x = true_dist[:, :(input_dim-nvars)]
     # sort by absolute value of the difference between 
     # generated x and fixed_x
     diff = ((xs - x)**2).mean(1)
     indices = torch.argsort(diff)
     indices_sub = indices[:output_size]
     
-    return samples[indices_sub, (INPUT_DIM-nvars+2):]
+    return samples[indices_sub, (input_dim-nvars+2):]
 
 
-def predict_fixed_continuous(df, start_time, nsteps):
+def predict_fixed_continuous(df, start_time, nsteps, ntimes, nvars, netG, input_dim, latent_dim, use_cuda):
     """
     Continuously makes predictions for time series data. Uses previous predictions
     to predict for later time levels. 
@@ -321,7 +321,7 @@ def predict_fixed_continuous(df, start_time, nsteps):
         # print("step " + str(step))
         # print("updating " + str(ntimes+step - 1))
         # print("using data from " + str(step) + " to " + str(ntimes + step - 1))
-        pred = predict_fixed(netG, pred_out[step:(ntimes + step), :], 10, 1)
+        pred = predict_fixed(netG, pred_out[step:(ntimes + step), :], 10, 1, input_dim, latent_dim, nvars, ntimes, use_cuda)
         pred_out[(ntimes + step - 1), 2:] = pred.detach().numpy()
     return np.maximum(pred_out, 0)
 
