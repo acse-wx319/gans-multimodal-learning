@@ -84,3 +84,5 @@ Distributed under the MIT License. See LICENSE for more information.
 ## Contact
 Wenjie Xu wenjie.xu20@imperial.ac.uk
 
+## Reference
+https://github.com/caogang/wgan-gp
